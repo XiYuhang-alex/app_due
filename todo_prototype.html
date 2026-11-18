@@ -1,0 +1,1096 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Todo · Material 3 原型</title>
+<style>
+/* ============================================================
+   1. Material 3 Design Tokens（ColorScheme.fromSeed(#6750A4)）
+   ============================================================ */
+:root{
+  --primary:#6750A4;              --on-primary:#FFFFFF;
+  --primary-container:#EADDFF;    --on-primary-container:#21005D;
+  --secondary:#625B71;            --on-secondary:#FFFFFF;
+  --secondary-container:#E8DEF8;  --on-secondary-container:#1D192B;
+  --tertiary:#7D5260;             --tertiary-container:#FFD8E4;
+  --on-tertiary-container:#31111D;
+  --error:#B3261E;                --on-error:#FFFFFF;
+  --error-container:#F9DEDC;      --on-error-container:#410E0B;
+  --surface:#FEF7FF;              --on-surface:#1D1B20;
+  --on-surface-variant:#49454F;
+  --surface-container-lowest:#FFFFFF;
+  --surface-container-low:#F7F2FA;
+  --surface-container:#F3EDF7;
+  --surface-container-high:#ECE6F0;
+  --surface-container-highest:#E6E0E9;
+  --outline:#79747E;              --outline-variant:#CAC4D0;
+  --inverse-surface:#322F35;      --inverse-on-surface:#F5EFF7;
+
+  --elev1:0 1px 2px rgba(0,0,0,.30), 0 1px 3px 1px rgba(0,0,0,.15);
+  --elev2:0 1px 2px rgba(0,0,0,.30), 0 2px 6px 2px rgba(0,0,0,.15);
+  --elev3:0 4px 8px 3px rgba(0,0,0,.15), 0 1px 3px rgba(0,0,0,.30);
+
+  --std:cubic-bezier(.2,0,0,1);        /* Easing.standard  */
+  --emph:cubic-bezier(.05,.7,.1,1);    /* Easing.emphasized */
+}
+
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;min-height:100%}
+body{
+  display:flex;align-items:center;justify-content:center;
+  padding:24px;background:var(--surface-container-highest);
+  font-family:"Roboto","PingFang SC","Noto Sans SC","Microsoft YaHei",system-ui,sans-serif;
+  color:var(--on-surface);
+}
+
+/* ============================================================
+   2. 设备外框
+   ============================================================ */
+.phone{
+  position:relative;width:390px;height:844px;flex:0 0 auto;
+  background:var(--surface);border-radius:40px;overflow:hidden;
+  box-shadow:0 24px 64px rgba(0,0,0,.24),0 0 0 1px rgba(0,0,0,.04);
+  display:flex;flex-direction:column;
+}
+.statusbar{
+  height:28px;flex:0 0 auto;display:flex;align-items:center;justify-content:space-between;
+  padding:0 24px;font-size:12px;font-weight:500;letter-spacing:.4px;color:var(--on-surface);
+}
+.statusbar .right{display:flex;align-items:center;gap:5px;color:var(--on-surface)}
+.viewport{position:relative;flex:1;overflow:hidden}
+
+/* ============================================================
+   3. 页面（PageRouteBuilder：淡入 + 上移 300ms）
+   ============================================================ */
+.screen{
+  position:absolute;inset:0;display:flex;flex-direction:column;
+  background:var(--surface);opacity:0;pointer-events:none;z-index:0;
+  transform:translateY(10px);
+  transition:opacity 300ms var(--std),transform 300ms var(--std);
+}
+.screen.active{opacity:1;pointer-events:auto;transform:none}
+#addScreen,#detailScreen{z-index:2}
+@keyframes screenFadeIn{from{opacity:0}to{opacity:1}}
+.screen.hero-enter .scroll{animation:screenFadeIn 260ms var(--std) 90ms both}
+.scroll{
+  flex:1;overflow-y:auto;overflow-x:hidden;padding:0 16px 96px;
+  scrollbar-width:none;-ms-overflow-style:none;
+}
+.scroll::-webkit-scrollbar{display:none}
+
+/* ============================================================
+   4. Top App Bar（56dp / surface / elevation 0）
+   ============================================================ */
+.appbar{
+  height:56px;flex:0 0 auto;display:flex;align-items:center;gap:4px;
+  padding:0 4px;background:var(--surface);
+}
+.appbar h1{
+  flex:1;margin:0;padding-left:12px;
+  font-size:22px;line-height:28px;font-weight:400;letter-spacing:0;
+}
+.iconbtn{
+  width:48px;height:48px;flex:0 0 auto;border:0;border-radius:24px;
+  background:transparent;color:var(--on-surface);display:grid;place-items:center;
+  cursor:pointer;transition:background 120ms var(--std);
+}
+.iconbtn:hover{background:rgba(29,27,32,.08)}
+.iconbtn:active{background:rgba(29,27,32,.12)}
+
+/* ============================================================
+   5. Buttons（Filled 40dp / StadiumBorder）
+   ============================================================ */
+.filled-button{
+  height:40px;padding:0 24px;border:0;border-radius:20px;
+  background:var(--primary);color:var(--on-primary);
+  font-family:inherit;font-size:14px;line-height:20px;font-weight:500;letter-spacing:.1px;
+  display:inline-flex;align-items:center;justify-content:center;gap:8px;
+  cursor:pointer;transition:box-shadow 150ms var(--std),background 150ms var(--std);
+}
+.filled-button:hover{box-shadow:var(--elev1)}
+.filled-button:active{box-shadow:none}
+.filled-button.full{width:100%}
+.outlined-button{
+  height:40px;padding:0 24px;border:1px solid var(--outline);border-radius:20px;
+  background:transparent;color:var(--primary);
+  font-family:inherit;font-size:14px;font-weight:500;letter-spacing:.1px;
+  display:inline-flex;align-items:center;justify-content:center;cursor:pointer;
+}
+.text-button{
+  height:40px;padding:0 12px;border:0;border-radius:20px;background:transparent;
+  color:var(--primary);font-family:inherit;font-size:14px;font-weight:500;cursor:pointer;
+}
+.filled-button:disabled{cursor:default;opacity:.55}
+
+/* ============================================================
+   6. Text Field（Outlined / 56dp / radius 4）
+   ============================================================ */
+.field{
+  position:relative;height:56px;display:flex;align-items:center;
+  padding:0 16px;border:1px solid var(--outline);border-radius:4px;
+  background:transparent;transition:border-color 150ms var(--std),box-shadow 150ms var(--std);
+}
+.field.focused{border-color:var(--primary);box-shadow:inset 0 0 0 1px var(--primary)}
+.field.error{border-color:var(--error);box-shadow:inset 0 0 0 1px var(--error)}
+.field input{
+  width:100%;height:100%;border:0;outline:0;background:transparent;
+  font-family:inherit;font-size:16px;line-height:24px;letter-spacing:.5px;color:var(--on-surface);
+  padding:8px 0 0;
+}
+.field .label{
+  position:absolute;left:12px;top:50%;transform:translateY(-50%);
+  padding:0 4px;background:var(--surface);color:var(--on-surface-variant);
+  font-size:16px;line-height:20px;letter-spacing:.5px;
+  transition:top 160ms var(--std),font-size 160ms var(--std),color 160ms var(--std);
+  pointer-events:none;
+}
+.field.float .label{top:0;font-size:12px;line-height:16px;letter-spacing:.4px}
+.field.focused .label{color:var(--primary)}
+.field.error .label{color:var(--error)}
+.support{
+  min-height:16px;margin:4px 16px 0;font-size:12px;line-height:16px;
+  letter-spacing:.4px;color:var(--on-surface-variant);
+}
+.support.error{color:var(--error)}
+.field:focus-within{border-color:var(--primary);box-shadow:inset 0 0 0 1px var(--primary)}
+.field:focus-within .label{color:var(--primary)}
+.time-row{display:flex;gap:8px}
+.time-row .field{min-width:0}
+.field input[type="date"],.field input[type="time"]{
+  padding-top:8px;font-size:16px;letter-spacing:.3px;color:var(--on-surface);
+  min-width:0;
+}
+.field input[type="date"]::-webkit-calendar-picker-indicator,
+.field input[type="time"]::-webkit-calendar-picker-indicator{
+  opacity:.6;cursor:pointer;
+}
+
+/* ============================================================
+   7. Chip / Segmented Button / Checkbox / Switch
+   ============================================================ */
+.chip{
+  height:32px;display:inline-flex;align-items:center;gap:6px;padding:0 12px;
+  border-radius:8px;font-size:14px;line-height:20px;font-weight:500;letter-spacing:.1px;
+}
+.chip.time{background:var(--surface-container-highest);color:var(--on-surface-variant)}
+.chip.imp-high{background:var(--error-container);color:var(--on-error-container)}
+.chip.imp-normal{background:var(--secondary-container);color:var(--on-secondary-container)}
+.chip.tiny{height:26px;padding:0 10px;font-size:12px;letter-spacing:.4px}
+
+.segmented{
+  display:flex;height:40px;border:1px solid var(--outline);border-radius:20px;overflow:hidden;
+  background:transparent;
+}
+.seg{
+  flex:1;border:0;background:transparent;position:relative;cursor:pointer;
+  font-family:inherit;font-size:14px;line-height:20px;font-weight:500;letter-spacing:.1px;
+  color:var(--on-surface);display:flex;align-items:center;justify-content:center;gap:6px;
+  transition:background 180ms var(--std),color 180ms var(--std);
+}
+.seg + .seg::before{
+  content:"";position:absolute;left:0;top:0;bottom:0;width:1px;background:var(--outline);
+}
+.seg.selected{background:var(--secondary-container);color:var(--on-secondary-container)}
+.seg.selected::before{opacity:0}
+.seg.selected + .seg::before{opacity:0}
+.seg:first-child.selected{border-radius:20px 0 0 20px}
+.seg:last-child.selected{border-radius:0 20px 20px 0}
+.seg svg{display:none}
+.seg.selected svg{display:block}
+
+.cb{
+  width:40px;height:40px;flex:0 0 auto;border:0;background:transparent;
+  display:grid;place-items:center;cursor:pointer;padding:0;
+}
+.cb-box{
+  width:18px;height:18px;border:2px solid var(--outline);border-radius:2px;
+  display:grid;place-items:center;
+  transition:background 160ms var(--std),border-color 160ms var(--std);
+}
+.cb-box svg{
+  opacity:0;transform:scale(.4);
+  transition:opacity 160ms var(--std),transform 160ms var(--std);
+  color:var(--on-primary);
+}
+.task-card.done .cb-box{background:var(--primary);border-color:var(--primary)}
+.task-card.done .cb-box svg{opacity:1;transform:scale(1)}
+
+.switch{
+  position:relative;width:52px;height:32px;flex:0 0 auto;border-radius:16px;
+  background:var(--surface-container-highest);border:2px solid var(--outline);
+  cursor:pointer;transition:background 200ms var(--std),border-color 200ms var(--std);
+}
+.switch .thumb{
+  position:absolute;top:50%;left:6px;transform:translateY(-50%);
+  width:16px;height:16px;border-radius:50%;background:var(--outline);
+  transition:left 200ms var(--std),width 200ms var(--std),height 200ms var(--std),background 200ms var(--std);
+}
+.switch.on{background:var(--primary);border-color:var(--primary)}
+.switch.on .thumb{left:22px;width:24px;height:24px;background:var(--on-primary)}
+
+/* ============================================================
+   8. Card / List
+   ============================================================ */
+.card{
+  background:var(--surface-container-low);border-radius:12px;
+  box-shadow:var(--elev1);overflow:hidden;
+}
+.card.plain{background:var(--surface-container-lowest);box-shadow:var(--elev1)}
+
+.task-card{
+  position:relative;display:flex;align-items:center;gap:10px;
+  padding:12px 8px 12px 18px;margin-bottom:8px;
+  background:var(--surface-container-low);border-radius:12px;box-shadow:var(--elev1);
+  cursor:pointer;overflow:hidden;
+  transition:background 220ms var(--std),box-shadow 220ms var(--std);
+}
+.task-card:hover{box-shadow:var(--elev2)}
+.task-card.done{background:var(--surface-container-lowest)}
+.imp-bar{
+  position:absolute;left:0;top:12px;bottom:12px;width:3px;border-radius:0 2px 2px 0;
+  background:var(--outline);transition:background 220ms var(--std),opacity 220ms var(--std);
+}
+.imp-bar.high{background:var(--error)}
+.imp-bar.normal{background:var(--secondary)}
+.task-card.done .imp-bar{opacity:.35}
+.hero-badge{
+  width:40px;height:40px;flex:0 0 auto;border-radius:12px;display:grid;place-items:center;
+  transition:background 220ms var(--std),color 220ms var(--std);
+}
+.hero-badge.high{background:var(--error-container);color:var(--error)}
+.hero-badge.normal{background:var(--secondary-container);color:var(--secondary)}
+.task-card.done .hero-badge{background:var(--surface-container-highest);color:var(--on-surface-variant)}
+.hero-badge.lg{width:96px;height:96px;border-radius:28px}
+.hero-badge.lg svg{width:40px;height:40px}
+
+.task-main{flex:1;min-width:0}
+.task-name{
+  font-size:16px;line-height:24px;letter-spacing:.5px;font-weight:400;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+  transition:color 220ms var(--std),text-decoration-color 220ms var(--std);
+  text-decoration:line-through;text-decoration-color:transparent;
+}
+.task-card.done .task-name{color:var(--on-surface-variant);text-decoration-color:var(--on-surface-variant)}
+.task-meta{display:flex;align-items:center;gap:8px;margin-top:6px}
+.task-meta .chip{height:26px;padding:0 10px;font-size:12px;letter-spacing:.4px}
+.task-meta .chip svg{width:14px;height:14px}
+
+/* 空状态 */
+.empty{padding:48px 16px;text-align:center;color:var(--on-surface-variant)}
+.empty svg{width:40px;height:40px;opacity:.5;margin-bottom:12px}
+.empty p{margin:0;font-size:14px;line-height:20px;letter-spacing:.25px}
+
+/* 列表切换（AnimatedSwitcher 等价实现：淡入 + 位移） */
+@keyframes listSwitchIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+#taskList.animate{animation:listSwitchIn 220ms var(--std) both}
+@keyframes cardInsert{from{opacity:0;transform:translateY(-6px) scale(.99)}to{opacity:1;transform:none}}
+.task-card.insert{animation:cardInsert 260ms var(--emph) both}
+
+/* ============================================================
+   9. 首页：进度卡片（Hero 图 + 进度环）
+   ============================================================ */
+.hero-card{
+  position:relative;height:160px;border-radius:12px;overflow:hidden;margin-top:4px;
+  background:linear-gradient(135deg,#6750A4 0%,#9A82DB 55%,#B9E4D0 100%);
+  box-shadow:var(--elev2);
+}
+.hero-card img{width:100%;height:100%;object-fit:cover;display:block}
+.hero-card .scrim{
+  position:absolute;inset:0;
+  background:
+    linear-gradient(180deg,rgba(0,0,0,0) 18%,rgba(0,0,0,.42) 58%,rgba(0,0,0,.82) 100%),
+    linear-gradient(90deg,rgba(0,0,0,.30) 0%,rgba(0,0,0,0) 62%);
+}
+.hero-inner{
+  position:absolute;left:16px;right:16px;bottom:14px;
+  display:flex;align-items:flex-end;justify-content:space-between;gap:12px;color:#fff;
+}
+.hero-inner .kicker{font-size:12px;line-height:16px;letter-spacing:.5px;opacity:.92;text-shadow:0 1px 4px rgba(0,0,0,.45)}
+.hero-inner .title{font-size:20px;line-height:26px;font-weight:500;letter-spacing:.15px;margin:3px 0 2px;text-shadow:0 1px 4px rgba(0,0,0,.35)}
+.hero-inner .sub{font-size:12px;line-height:16px;letter-spacing:.4px;opacity:.94;text-shadow:0 1px 4px rgba(0,0,0,.45)}
+.ring{position:relative;width:56px;height:56px;flex:0 0 auto}
+.ring svg{width:56px;height:56px;display:block}
+.ring .fg{transition:stroke-dashoffset 600ms var(--emph)}
+.ring .pct{
+  position:absolute;inset:0;display:grid;place-items:center;
+  font-size:12px;font-weight:500;letter-spacing:.5px;
+}
+
+/* 快速新增 */
+.quick-row{display:flex;align-items:center;gap:8px;margin-top:16px}
+.quick-row .field{flex:1}
+.quick-wrap{flex:1}
+.quick-row .filled-button{height:40px;flex:0 0 auto}
+
+/* 列表头 */
+.list-head{
+  display:flex;align-items:center;justify-content:space-between;
+  margin:20px 0 10px;padding:0 2px;
+}
+.list-head .count{font-size:14px;line-height:20px;letter-spacing:.25px;color:var(--on-surface)}
+.list-head .sort{font-size:12px;line-height:16px;letter-spacing:.4px;color:var(--on-surface-variant)}
+
+/* ============================================================
+   10. FAB / SnackBar
+   ============================================================ */
+.fab{
+  position:absolute;right:16px;bottom:16px;width:56px;height:56px;border:0;border-radius:16px;
+  background:var(--primary-container);color:var(--on-primary-container);
+  box-shadow:var(--elev3);display:grid;place-items:center;cursor:pointer;
+  transition:transform 180ms var(--emph),box-shadow 180ms var(--std);
+  z-index:3;
+}
+.fab:hover{transform:scale(1.04)}
+.fab:active{transform:scale(.96);box-shadow:var(--elev2)}
+.snackbar{
+  position:absolute;left:16px;right:16px;bottom:16px;z-index:20;
+  background:var(--inverse-surface);color:var(--inverse-on-surface);
+  border-radius:4px;padding:14px 16px;box-shadow:var(--elev3);
+  font-size:14px;line-height:20px;letter-spacing:.25px;
+  opacity:0;transform:translateY(12px);pointer-events:none;
+  transition:opacity 220ms var(--std),transform 220ms var(--std);
+}
+.snackbar.show{opacity:1;transform:none}
+
+/* ============================================================
+   11. 新增页
+   ============================================================ */
+.form{padding-top:8px}
+.form-item + .form-item{margin-top:16px}
+.dd{position:relative}
+.dd-trigger{cursor:pointer;user-select:none}
+.dd-trigger .dd-value{font-size:16px;letter-spacing:.5px;flex:1;padding-top:8px}
+.dd-trigger .arrow{color:var(--on-surface-variant);transition:transform 200ms var(--std)}
+.dd.open .dd-trigger{border-color:var(--primary);box-shadow:inset 0 0 0 1px var(--primary)}
+.dd.open .dd-trigger .label{color:var(--primary)}
+.dd.open .dd-trigger .arrow{transform:rotate(180deg)}
+.dd-menu{
+  position:absolute;left:0;right:0;top:60px;z-index:10;
+  background:var(--surface-container);border-radius:4px;box-shadow:var(--elev2);
+  padding:8px 0;
+  opacity:0;transform:translateY(-6px) scaleY(.96);transform-origin:top;
+  pointer-events:none;transition:opacity 160ms var(--std),transform 160ms var(--std);
+}
+.dd.open .dd-menu{opacity:1;transform:none;pointer-events:auto}
+.dd-item{
+  width:100%;height:48px;border:0;background:transparent;cursor:pointer;
+  display:flex;align-items:center;gap:12px;padding:0 16px;
+  font-family:inherit;font-size:16px;line-height:24px;letter-spacing:.5px;
+  color:var(--on-surface);text-align:left;
+}
+.dd-item:hover{background:rgba(29,27,32,.08)}
+.dd-item svg{width:20px;height:20px;color:var(--primary);opacity:0}
+.dd-item.selected svg{opacity:1}
+
+.remind-row{
+  display:flex;align-items:center;justify-content:space-between;gap:12px;
+  padding:12px 16px;background:var(--surface-container-low);
+  border-radius:12px;box-shadow:var(--elev1);
+}
+.remind-row .t{font-size:16px;line-height:24px;letter-spacing:.5px}
+.remind-row .s{font-size:12px;line-height:16px;letter-spacing:.4px;color:var(--on-surface-variant);margin-top:2px}
+.remind-row .s b{color:var(--primary);font-weight:500}
+.form-actions{margin-top:28px}
+.form-actions .filled-button{height:48px;border-radius:24px}
+.form-hint{
+  margin-top:12px;text-align:center;font-size:12px;line-height:16px;
+  letter-spacing:.4px;color:var(--on-surface-variant);
+}
+
+/* ============================================================
+   12. 详情页
+   ============================================================ */
+.detail-head{display:flex;align-items:flex-start;gap:16px;margin:8px 0 20px}
+.detail-head .name{font-size:22px;line-height:28px;font-weight:400;letter-spacing:0}
+.detail-head .sub{
+  display:flex;align-items:center;gap:8px;margin-top:8px;
+  font-size:14px;line-height:20px;letter-spacing:.25px;color:var(--on-surface-variant);
+}
+.info-card{padding:0 16px}
+.info-row{
+  display:flex;align-items:center;justify-content:space-between;gap:12px;
+  min-height:56px;border-bottom:1px solid var(--outline-variant);
+}
+.info-row:last-child{border-bottom:0}
+.info-label{font-size:14px;line-height:20px;letter-spacing:.25px;color:var(--on-surface-variant)}
+.info-value{font-size:16px;line-height:24px;letter-spacing:.5px}
+.info-value.muted{color:var(--on-surface-variant)}
+.detail-actions{margin-top:24px}
+
+/* Hero 飞行副本 */
+.hero-clone{
+  position:fixed;z-index:9999;pointer-events:none;
+  margin:0!important;display:grid;place-items:center;
+}
+
+/* 截图模式：?shot=1 去掉外框与页面留白，仅保留 App 画面 */
+body.shot{padding:0;background:var(--surface);display:block}
+body.shot .phone{width:390px;height:844px;border-radius:0;box-shadow:none}
+</style>
+</head>
+<body>
+<div class="phone" id="phone">
+  <div class="statusbar">
+    <span>9:41</span>
+    <span class="right">
+      <svg width="17" height="11" viewBox="0 0 17 11" fill="currentColor"><rect x="0" y="7" width="3" height="4" rx="1"/><rect x="4.5" y="5" width="3" height="6" rx="1"/><rect x="9" y="2.5" width="3" height="8.5" rx="1"/><rect x="13.5" y="0" width="3" height="11" rx="1"/></svg>
+      <svg width="16" height="11" viewBox="0 0 16 11" fill="currentColor"><path d="M8 9.2a1.2 1.2 0 100 2.4 1.2 1.2 0 000-2.4zM8 5.6c-1.5 0-2.9.6-3.9 1.6l1.2 1.2A4 4 0 018 7.4c1 0 2 .4 2.7 1l1.2-1.2A5.6 5.6 0 008 5.6zM8 2c-2.5 0-4.8 1-6.5 2.6l1.2 1.2A7.1 7.1 0 018 3.8c2.1 0 4 .8 5.3 2l1.2-1.2A9.2 9.2 0 008 2z"/></svg>
+      <svg width="24" height="11" viewBox="0 0 24 11" fill="none"><rect x=".5" y=".5" width="21" height="10" rx="3" stroke="currentColor" opacity=".4"/><rect x="2" y="2" width="16" height="7" rx="1.5" fill="currentColor"/><path d="M23 4.2v2.6a1.6 1.6 0 000-2.6z" fill="currentColor" opacity=".5"/></svg>
+    </span>
+  </div>
+
+  <div class="viewport">
+    <!-- ==================== 首页 ==================== -->
+    <section class="screen active" id="homeScreen">
+      <div class="appbar">
+        <div style="flex:1"></div>
+        <button class="iconbtn" id="btnSort" aria-label="排序说明">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 7h16M7 12h10M10 17h4"/></svg>
+        </button>
+      </div>
+
+      <div class="scroll">
+        <!-- 进度卡片 -->
+        <div class="hero-card" id="heroCard">
+          <img id="heroImg" alt="励志卡通插画"
+            src="https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=flat%20vector%20illustration%2C%20cute%20cartoon%20mascot%20character%2C%20motivational%2C%20holding%20a%20checklist%2C%20soft%20pastel%20purple%20lavender%20background%2C%20mint%20accents%2C%20rounded%20shapes%2C%20sticker%20style%2C%20minimal%2C%20no%20text&image_size=landscape_16_9">
+          <div class="scrim"></div>
+          <div class="hero-inner">
+            <div>
+              <div class="kicker" id="heroDate">11月18日 · 周三</div>
+              <div class="title">今天也要加油鸭</div>
+              <div class="sub" id="progressText">已完成 2 / 6 项</div>
+            </div>
+            <div class="ring">
+              <svg viewBox="0 0 56 56">
+                <circle cx="28" cy="28" r="24" fill="none" stroke="rgba(255,255,255,.28)" stroke-width="4"/>
+                <circle class="fg" id="ringFg" cx="28" cy="28" r="24" fill="none" stroke="#FFFFFF"
+                        stroke-width="4" stroke-linecap="round"
+                        stroke-dasharray="150.8" stroke-dashoffset="90.5"
+                        transform="rotate(-90 28 28)"/>
+              </svg>
+              <span class="pct" id="ringPct">33%</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- 快速新增 -->
+        <div class="quick-row">
+          <div class="quick-wrap">
+            <div class="field" id="quickField">
+              <span class="label">新增待办</span>
+              <input id="quickInput" type="text" maxlength="30" autocomplete="off" aria-label="新增待办">
+            </div>
+            <div class="support" id="quickSupport">回车或点击“添加”即可快速创建</div>
+          </div>
+          <button class="filled-button" id="btnQuickAdd">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+            添加
+          </button>
+        </div>
+
+        <!-- 筛选（AnimatedSwitcher 切换列表） -->
+        <div class="segmented" id="segmented" style="margin-top:20px">
+          <button class="seg selected" data-filter="all">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 12.5l4.5 4.5L19.5 6.5"/></svg>
+            全部
+          </button>
+          <button class="seg" data-filter="done">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 12.5l4.5 4.5L19.5 6.5"/></svg>
+            已完成
+          </button>
+          <button class="seg" data-filter="todo">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 12.5l4.5 4.5L19.5 6.5"/></svg>
+            未完成
+          </button>
+        </div>
+
+        <div class="list-head">
+          <span class="count" id="listCount">全部 · 6 项</span>
+          <span class="sort">按截止时间 + 重要度排序</span>
+        </div>
+
+        <div id="taskList"></div>
+      </div>
+
+      <button class="fab" id="fabAdd" aria-label="新增待办">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+      </button>
+    </section>
+
+    <!-- ==================== 新增待办 ==================== -->
+    <section class="screen" id="addScreen">
+      <div class="appbar">
+        <button class="iconbtn" data-back aria-label="返回">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M11 6l-6 6 6 6"/></svg>
+        </button>
+        <h1>新增待办</h1>
+      </div>
+
+      <div class="scroll">
+        <div class="form">
+          <div class="form-item">
+            <div class="field" id="nameField">
+              <span class="label">名称</span>
+              <input id="nameInput" type="text" maxlength="30" autocomplete="off" aria-label="名称">
+            </div>
+            <div class="support" id="nameSupport">为待办取一个清晰的名称</div>
+          </div>
+
+          <div class="form-item">
+            <div class="time-row">
+              <div class="field float" id="dateField" style="flex:1.15">
+                <span class="label">截止日期</span>
+                <input id="dateInput" type="date" aria-label="截止日期">
+              </div>
+              <div class="field float" id="timeField" style="flex:1">
+                <span class="label">截止时间</span>
+                <input id="timeInput" type="time" step="60" aria-label="截止时间">
+              </div>
+            </div>
+            <div class="support" id="timeSupport">可自由选择日期与时间，默认今天 22:00</div>
+          </div>
+
+          <div class="form-item">
+            <div class="dd" id="impDropdown">
+              <div class="field dd-trigger float" id="impTrigger" tabindex="0">
+                <span class="label">重要度</span>
+                <span class="dd-value" id="impValue">一般</span>
+                <svg class="arrow" width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M7 10l5 5 5-5z"/></svg>
+              </div>
+              <div class="dd-menu" id="impMenu">
+                <button class="dd-item" data-val="极其">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 12.5l4.5 4.5L19.5 6.5"/></svg>
+                  极其
+                </button>
+                <button class="dd-item selected" data-val="一般">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 12.5l4.5 4.5L19.5 6.5"/></svg>
+                  一般
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <div class="form-item">
+            <div class="remind-row">
+              <div>
+                <div class="t">是否开启提醒</div>
+                <div class="s">当前：<b id="remindValue">否</b></div>
+              </div>
+              <div class="switch" id="remindSwitch" role="switch" aria-checked="false" tabindex="0">
+                <span class="thumb"></span>
+              </div>
+            </div>
+          </div>
+
+          <div class="form-actions">
+            <button class="filled-button full" id="btnSave">保存</button>
+            <div class="form-hint">保存后按截止时间与重要度自动排序</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==================== 待办详情（Hero 落点） ==================== -->
+    <section class="screen" id="detailScreen">
+      <div class="appbar">
+        <button class="iconbtn" data-back aria-label="返回">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M11 6l-6 6 6 6"/></svg>
+        </button>
+        <h1>待办详情</h1>
+      </div>
+
+      <div class="scroll">
+        <div class="detail-head">
+          <div class="hero-badge lg high" id="detailBadge" data-hero="">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M14.4 6L14 4H5v17h2v-7h5.6l.4 2h7V6z"/></svg>
+          </div>
+          <div style="flex:1;min-width:0">
+            <div class="name" id="detailName">待办名称</div>
+            <div class="sub" id="detailSub">今天截止</div>
+          </div>
+        </div>
+
+        <div class="card info-card">
+          <div class="info-row">
+            <span class="info-label">截止时间</span>
+            <span class="info-value" id="detailTime">今日 22:00</span>
+          </div>
+          <div class="info-row">
+            <span class="info-label">重要度</span>
+            <span class="chip imp-normal" id="detailImp">一般</span>
+          </div>
+          <div class="info-row">
+            <span class="info-label">提醒</span>
+            <span class="info-value muted" id="detailRemind">未开启</span>
+          </div>
+          <div class="info-row">
+            <span class="info-label">状态</span>
+            <span class="info-value" id="detailState">未完成</span>
+          </div>
+        </div>
+
+        <div class="detail-actions">
+          <button class="filled-button full" id="btnToggleDone" style="height:48px;border-radius:24px">标记为已完成</button>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <div class="snackbar" id="snackbar"></div>
+</div>
+
+<script>
+/* ============================================================
+   状态
+   ============================================================ */
+/* 日期工具：按系统当天动态计算 */
+const pad = n => String(n).padStart(2, '0');
+const fmtDate = d => `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+const todayStr = () => fmtDate(new Date());
+function addDays(n){
+  const d = new Date();
+  d.setDate(d.getDate() + n);
+  return fmtDate(d);
+}
+const WEEK = ['周日','周一','周二','周三','周四','周五','周六'];
+const dueTs = t => new Date(`${t.date}T${t.time}:00`).getTime();
+function dayLabel(dateStr){
+  if (dateStr === todayStr()) return '今天';
+  if (dateStr === addDays(1)) return '明天';
+  if (dateStr === addDays(2)) return '后天';
+  const [y, m, d] = dateStr.split('-').map(Number);
+  return y === new Date().getFullYear() ? `${m}月${d}日` : `${y}年${m}月${d}日`;
+}
+
+const state = {
+  filter:'all',
+  detailId:null,
+  addImportant:'一般',
+  addRemind:false,
+  tasks:[
+    {id:'t1', name:'提交 Flutter 动画作业', date: todayStr(), time:'23:00', important:'极其', remind:true,  done:true},
+    {id:'t2', name:'完成移动开发课程实验报告', date: todayStr(), time:'22:00', important:'极其', remind:true,  done:false},
+    {id:'t3', name:'背 30 个英语单词', date: todayStr(), time:'21:00', important:'一般', remind:false, done:false},
+    {id:'t4', name:'给妈妈打电话', date: todayStr(), time:'20:00', important:'一般', remind:false, done:true},
+    {id:'t5', name:'跑步 3 公里', date: todayStr(), time:'19:30', important:'一般', remind:false, done:false},
+    {id:'t6', name:'交社团活动报名表', date: addDays(1), time:'12:00', important:'极其', remind:true, done:false}
+  ]
+};
+
+const $ = s => document.querySelector(s);
+const $$ = s => Array.from(document.querySelectorAll(s));
+const esc = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const rank = i => i === '极其' ? 0 : 1;
+
+const ICON_CLOCK = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 1.6"/></svg>';
+const ICON_BELL  = '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 22c1.1 0 2-.9 2-2h-4c0 1.1.9 2 2 2zm6-6v-5c0-3.07-1.63-5.64-4.5-6.32V4a1.5 1.5 0 00-3 0v.68C7.64 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2z"/></svg>';
+const ICON_FLAG  = '<svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M14.4 6L14 4H5v17h2v-7h5.6l.4 2h7V6z"/></svg>';
+
+/* ============================================================
+   页面导航（PageRouteBuilder：淡入 + 上移）
+   ============================================================ */
+function showScreen(screen, animate = true){
+  if (!animate) screen.style.transition = 'none';
+  screen.classList.add('active');
+  void screen.offsetHeight;
+  if (!animate) screen.style.transition = '';
+}
+function hideScreen(screen){
+  screen.classList.remove('active','hero-enter');
+}
+
+/* Hero 共享元素飞行动画（对应 Flutter Hero + flightShuttleBuilder） */
+function flyHero(fromEl, toEl, duration, after){
+  if (!fromEl || !toEl) { after && after(); return; }
+  const a = fromEl.getBoundingClientRect();
+  const b = toEl.getBoundingClientRect();
+  const clone = fromEl.cloneNode(true);
+  clone.classList.add('hero-clone');
+  const cs = getComputedStyle(fromEl);
+  clone.style.left = a.left + 'px';
+  clone.style.top = a.top + 'px';
+  clone.style.width = a.width + 'px';
+  clone.style.height = a.height + 'px';
+  clone.style.borderRadius = cs.borderRadius;
+  clone.style.transformOrigin = 'top left';
+  clone.style.background = cs.backgroundColor;
+  clone.style.color = cs.color;
+  document.body.appendChild(clone);
+
+  const sx = b.width / a.width;
+  const sy = b.height / a.height;
+  fromEl.style.visibility = 'hidden';
+  toEl.style.visibility = 'hidden';
+
+  const anim = clone.animate([
+    { transform: 'translate(0px,0px) scale(1,1)', borderRadius: cs.borderRadius },
+    { transform: `translate(${b.left - a.left}px,${b.top - a.top}px) scale(${sx},${sy})`, borderRadius: '28px' }
+  ], { duration, easing: 'cubic-bezier(0.05,0.7,0.1,1)', fill: 'forwards' });
+
+  anim.onfinish = () => {
+    clone.remove();
+    fromEl.style.visibility = '';
+    toEl.style.visibility = '';
+    after && after();
+  };
+}
+
+/* ============================================================
+   渲染：列表
+   ============================================================ */
+function visibleTasks(){
+  let list = state.tasks.slice();
+  if (state.filter === 'done') list = list.filter(t => t.done);
+  if (state.filter === 'todo') list = list.filter(t => !t.done);
+  return list.sort((x, y) => (dueTs(x) - dueTs(y)) || (rank(x.important) - rank(y.important)));
+}
+
+function taskCardHTML(t, isNew){
+  const high = t.important === '极其';
+  return `
+  <article class="task-card ${t.done ? 'done' : ''} ${isNew ? 'insert' : ''}" data-id="${t.id}">
+    <span class="imp-bar ${high ? 'high' : 'normal'}"></span>
+    <div class="hero-badge ${high ? 'high' : 'normal'}" data-hero="${t.id}">${ICON_FLAG}</div>
+    <div class="task-main">
+      <div class="task-name" title="${esc(t.name)}">${esc(t.name)}</div>
+      <div class="task-meta">
+        <span class="chip time">${ICON_CLOCK}${dayLabel(t.date)} ${t.time} 前</span>
+        <span class="chip ${high ? 'imp-high' : 'imp-normal'}">${t.important}</span>
+      </div>
+    </div>
+    <button class="cb" aria-label="完成状态" role="checkbox" aria-checked="${t.done}">
+      <span class="cb-box">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 12.5l4.5 4.5L19.5 6.5"/></svg>
+      </span>
+    </button>
+  </article>`;
+}
+
+function renderList(newId){
+  const list = visibleTasks();
+  const box = $('#taskList');
+  if (!list.length){
+    const map = {
+      all:'还没有待办，点击右下角 + 新增',
+      done:'还没有已完成的待办',
+      todo:'太棒了，今天的待办全部完成'
+    };
+    box.innerHTML = `<div class="empty">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M4 12h10M4 17h6"/></svg>
+      <p>${map[state.filter]}</p></div>`;
+  } else {
+    box.innerHTML = list.map(t => taskCardHTML(t, t.id === newId)).join('');
+  }
+  box.classList.remove('animate');
+  void box.offsetWidth;
+  box.classList.add('animate');
+
+  const total = state.tasks.length;
+  const label = { all:'全部', done:'已完成', todo:'未完成' }[state.filter];
+  $('#listCount').textContent = `${label} · ${list.length} 项` + (state.filter === 'all' ? ` / 共 ${total} 项` : '');
+}
+
+/* 进度环 + 文案（隐式动画：stroke-dashoffset 过渡） */
+function updateProgress(){
+  const total = state.tasks.length;
+  const done = state.tasks.filter(t => t.done).length;
+  const pct = total ? Math.round(done / total * 100) : 0;
+  const C = 150.8;
+  $('#ringFg').style.strokeDashoffset = String(C - C * pct / 100);
+  $('#ringPct').textContent = pct + '%';
+  $('#progressText').textContent = `已完成 ${done} / ${total} 项`;
+}
+
+/* ============================================================
+   交互：勾选完成（AnimatedSwitcher 图标 + 隐式颜色过渡）
+   ============================================================ */
+function toggleTask(id){
+  const t = state.tasks.find(x => x.id === id);
+  if (!t) return;
+  t.done = !t.done;
+
+  const card = document.querySelector(`.task-card[data-id="${id}"]`);
+  if (card){
+    card.classList.toggle('done', t.done);
+    const cb = card.querySelector('.cb');
+    cb.setAttribute('aria-checked', String(t.done));
+  }
+  updateProgress();
+  if (state.filter !== 'all'){
+    setTimeout(() => { renderList(); }, 320);
+  }
+}
+
+/* 点击卡片 / 复选框 */
+$('#taskList').addEventListener('click', e => {
+  const card = e.target.closest('.task-card');
+  if (!card) return;
+  if (e.target.closest('.cb')) { toggleTask(card.dataset.id); return; }
+  openDetail(card.dataset.id);
+});
+
+/* ============================================================
+   详情页
+   ============================================================ */
+function openDetail(id){
+  const t = state.tasks.find(x => x.id === id);
+  if (!t) return;
+  state.detailId = id;
+  renderDetail(t);
+  const screen = $('#detailScreen');
+  showScreen(screen, false);
+  screen.classList.remove('hero-enter');
+  void screen.offsetWidth;
+  screen.classList.add('hero-enter');
+
+  const source = document.querySelector(`#taskList .task-card[data-id="${id}"] [data-hero]`);
+  const target = $('#detailBadge');
+  flyHero(source, target, 300, () => {});
+}
+
+function renderDetail(t){
+  const high = t.important === '极其';
+  const badge = $('#detailBadge');
+  badge.className = `hero-badge lg ${high ? 'high' : 'normal'}`;
+  badge.dataset.hero = t.id;
+  badge.innerHTML = ICON_FLAG;
+  $('#detailName').textContent = t.name;
+  $('#detailSub').textContent = `${dayLabel(t.date)}截止 · ${t.done ? '已完成' : '未完成'}`;
+  $('#detailTime').textContent = `${t.date.replace(/-/g, '/')} ${t.time}（${dayLabel(t.date)}）`;
+  const imp = $('#detailImp');
+  imp.className = `chip ${high ? 'imp-high' : 'imp-normal'}`;
+  imp.textContent = t.important;
+  $('#detailRemind').textContent = t.remind ? '已开启' : '未开启';
+  $('#detailState').textContent = t.done ? '已完成' : '未完成';
+  $('#btnToggleDone').textContent = t.done ? '撤销完成' : '标记为已完成';
+}
+
+$('#btnToggleDone').addEventListener('click', () => {
+  const t = state.tasks.find(x => x.id === state.detailId);
+  if (!t) return;
+  t.done = !t.done;
+  renderDetail(t);
+  updateProgress();
+  toast(t.done ? '已完成，继续加油' : '已撤销完成');
+});
+
+function closeDetail(){
+  const t = state.tasks.find(x => x.id === state.detailId);
+  const source = $('#detailBadge');
+  const target = t ? document.querySelector(`#taskList .task-card[data-id="${t.id}"] [data-hero]`) : null;
+  flyHero(source, target, 300, () => {
+    hideScreen($('#detailScreen'));
+    renderList();
+  });
+}
+
+/* ============================================================
+   新增页
+   ============================================================ */
+function openAdd(){
+  $('#nameInput').value = '';
+  $('#dateInput').value = todayStr();
+  $('#timeInput').value = '22:00';
+  setImportant('一般');
+  setRemind(false);
+  setFieldError('nameField', 'nameSupport', false);
+  setFieldError('dateField', 'timeSupport', false);
+  setFieldError('timeField', 'timeSupport', false);
+  $('#nameSupport').textContent = '为待办取一个清晰的名称';
+  $('#timeSupport').textContent = '可自由选择日期与时间，默认今天 22:00';
+  showScreen($('#addScreen'));
+}
+
+$('#fabAdd').addEventListener('click', openAdd);
+
+function setFieldError(fieldId, supportId, isError, msg){
+  const f = $('#' + fieldId);
+  f.classList.toggle('error', !!isError);
+  const s = $('#' + supportId);
+  if (msg) s.textContent = msg;
+  s.classList.toggle('error', !!isError);
+}
+
+function setImportant(v){
+  state.addImportant = v;
+  $('#impValue').textContent = v;
+  $$('#impMenu .dd-item').forEach(b => b.classList.toggle('selected', b.dataset.val === v));
+}
+function setRemind(v){
+  state.addRemind = v;
+  $('#remindSwitch').classList.toggle('on', v);
+  $('#remindSwitch').setAttribute('aria-checked', String(v));
+  $('#remindValue').textContent = v ? '是' : '否';
+}
+
+$('#impTrigger').addEventListener('click', e => {
+  e.stopPropagation();
+  $('#impDropdown').classList.toggle('open');
+});
+$('#impMenu').addEventListener('click', e => {
+  const item = e.target.closest('.dd-item');
+  if (!item) return;
+  setImportant(item.dataset.val);
+  $('#impDropdown').classList.remove('open');
+});
+document.addEventListener('click', e => {
+  if (!e.target.closest('#impDropdown')) $('#impDropdown').classList.remove('open');
+});
+$('#remindSwitch').addEventListener('click', () => setRemind(!state.addRemind));
+$('#remindSwitch').addEventListener('keydown', e => {
+  if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setRemind(!state.addRemind); }
+});
+
+/* 输入框浮动标签 */
+function bindField(fieldId, inputId){
+  const f = $('#' + fieldId), i = $('#' + inputId);
+  const sync = () => {
+    f.classList.toggle('focused', document.activeElement === i);
+    f.classList.toggle('float', document.activeElement === i || i.value.length > 0);
+  };
+  i.addEventListener('focus', sync);
+  i.addEventListener('blur', sync);
+  i.addEventListener('input', sync);
+}
+
+$('#btnSave').addEventListener('click', () => {
+  const name = $('#nameInput').value.trim();
+  const date = $('#dateInput').value;
+  const time = $('#timeInput').value;
+  let ok = true;
+
+  setFieldError('dateField', 'timeSupport', false);
+  setFieldError('timeField', 'timeSupport', false);
+
+  if (!name){
+    setFieldError('nameField', 'nameSupport', true, '请输入待办名称');
+    ok = false;
+  }
+  if (!date){
+    setFieldError('dateField', 'timeSupport', true, '请选择截止日期');
+    ok = false;
+  }
+  if (!time){
+    setFieldError('timeField', 'timeSupport', true, '请选择截止时间');
+    ok = false;
+  }
+  if (!ok) return;
+
+  const id = 't' + Date.now();
+  state.tasks.push({ id, name, date, time, important: state.addImportant, remind: state.addRemind, done:false });
+  state.filter = 'all';
+  syncSegmented();
+  hideScreen($('#addScreen'));
+  renderList(id);
+  updateProgress();
+  toast(`已添加「${name}」，截止 ${dayLabel(date)} ${time}`);
+});
+
+/* ============================================================
+   首页快速新增
+   ============================================================ */
+function quickAdd(){
+  const input = $('#quickInput');
+  const name = input.value.trim();
+  if (!name){
+    const s = $('#quickSupport');
+    s.textContent = '请输入待办名称，或点击右下角 + 详细新增';
+    s.classList.add('error');
+    $('#quickField').classList.add('error');
+    input.focus();
+    return;
+  }
+  const id = 't' + Date.now();
+  state.tasks.push({ id, name, date: todayStr(), time:'22:00', important:'一般', remind:false, done:false });
+  input.value = '';
+  $('#quickField').classList.remove('float','error');
+  $('#quickSupport').textContent = '回车或点击“添加”即可快速创建';
+  $('#quickSupport').classList.remove('error');
+  if (state.filter !== 'all'){ state.filter = 'all'; syncSegmented(); }
+  renderList(id);
+  updateProgress();
+  toast(`已添加「${name}」· 默认今天 22:00 / 一般`);
+  document.querySelector('#homeScreen .scroll').scrollTo({ top: 9999, behavior:'smooth' });
+}
+
+$('#btnQuickAdd').addEventListener('click', quickAdd);
+$('#quickInput').addEventListener('keydown', e => { if (e.key === 'Enter') quickAdd(); });
+
+/* ============================================================
+   筛选
+   ============================================================ */
+function syncSegmented(){
+  $$('.seg').forEach(b => b.classList.toggle('selected', b.dataset.filter === state.filter));
+}
+$('#segmented').addEventListener('click', e => {
+  const btn = e.target.closest('.seg');
+  if (!btn) return;
+  state.filter = btn.dataset.filter;
+  syncSegmented();
+  renderList();
+});
+
+/* 排序说明 */
+$('#btnSort').addEventListener('click', () => {
+  toast('排序规则：截止时间越近越靠前，同一时刻重要度高的在前');
+});
+
+/* ============================================================
+   返回 / SnackBar / 图片兜底
+   ============================================================ */
+$$('[data-back]').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const screen = btn.closest('.screen');
+    if (screen.id === 'detailScreen') closeDetail();
+    else hideScreen(screen);
+  });
+});
+
+let toastTimer = null;
+function toast(msg){
+  const bar = $('#snackbar');
+  bar.textContent = msg;
+  bar.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => bar.classList.remove('show'), 2600);
+}
+
+$('#heroImg').addEventListener('error', () => {
+  $('#heroImg').style.display = 'none';
+});
+
+/* ============================================================
+   初始化
+   ============================================================ */
+bindField('quickField','quickInput');
+bindField('nameField','nameInput');
+bindField('dateField','dateInput');
+bindField('timeField','timeInput');
+$('#quickSupport').style.padding = '4px 4px 0';
+
+const now = new Date();
+$('#heroDate').textContent = `${now.getMonth()+1}月${now.getDate()}日 · ${WEEK[now.getDay()]}`;
+
+/* 截图 / 演示参数：?shot=1&filter=done&screen=add|detail&id=t3 */
+const params = new URLSearchParams(location.search);
+if (params.get('shot') === '1') document.body.classList.add('shot');
+const initFilter = params.get('filter');
+if (initFilter === 'done' || initFilter === 'todo'){
+  state.filter = initFilter;
+  syncSegmented();
+}
+
+renderList();
+updateProgress();
+
+const initScreen = params.get('screen');
+if (initScreen === 'add'){
+  setTimeout(openAdd, 80);
+} else if (initScreen === 'detail'){
+  setTimeout(() => openDetail(params.get('id') || 't3'), 80);
+}
+</script>
+</body>
+</html>
