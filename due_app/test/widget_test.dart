@@ -1,30 +1,39 @@
-// This is a basic Flutter widget test.
-//
-// To perform an interaction with a widget in your test, use the WidgetTester
-// utility in the flutter_test package. For example, you can send tap and scroll
-// gestures. You can also use WidgetTester to find child widgets in the widget
-// tree, read text, and verify that the values of widget properties are correct.
-
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:due_app/main.dart';
 
 void main() {
-  testWidgets('Counter increments smoke test', (WidgetTester tester) async {
-    // Build our app and trigger a frame.
-    await tester.pumpWidget(const MyApp());
+  testWidgets('首页空列表可正常渲染', (WidgetTester tester) async {
+    await tester.pumpWidget(const DueApp(initialTasks: []));
+    await tester.pumpAndSettle();
 
-    // Verify that our counter starts at 0.
-    expect(find.text('0'), findsOneWidget);
-    expect(find.text('1'), findsNothing);
+    expect(find.text('全部 · 0 项'), findsOneWidget);
+  });
 
-    // Tap the '+' icon and trigger a frame.
-    await tester.tap(find.byIcon(Icons.add));
-    await tester.pump();
+  testWidgets('详情页删除待办需要二次确认', (WidgetTester tester) async {
+    final task = Task(
+      id: 'x1',
+      name: '测试任务',
+      due: DateTime.now().add(const Duration(hours: 2)),
+      importance: Importance.normal,
+      remind: false,
+    );
+    await tester.pumpWidget(DueApp(initialTasks: [task]));
+    await tester.pumpAndSettle();
 
-    // Verify that our counter has incremented.
-    expect(find.text('0'), findsNothing);
-    expect(find.text('1'), findsOneWidget);
+    await tester.tap(find.text('测试任务'));
+    await tester.pumpAndSettle();
+    expect(find.text('待办详情'), findsOneWidget);
+
+    await tester.tap(find.text('删除待办'));
+    await tester.pumpAndSettle();
+    expect(find.text('删除待办？'), findsOneWidget);
+
+    await tester.tap(find.text('删除'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('待办详情'), findsNothing);
+    expect(find.text('全部 · 0 项'), findsOneWidget);
   });
 }

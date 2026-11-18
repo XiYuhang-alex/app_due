@@ -1,13 +1,21 @@
+import 'dart:convert';
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
-void main() => runApp(const DueApp());
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  final tasks = await loadTasks() ?? seedTasks();
+  runApp(DueApp(initialTasks: tasks));
+}
 
 const _seedColor = Color(0xFF6750A4);
 
 class DueApp extends StatelessWidget {
-  const DueApp({super.key});
+  const DueApp({super.key, required this.initialTasks});
+
+  final List<Task> initialTasks;
 
   @override
   Widget build(BuildContext context) {
@@ -30,7 +38,7 @@ class DueApp extends StatelessWidget {
           ),
         ),
       ),
-      home: const HomePage(),
+      home: HomePage(initialTasks: initialTasks),
     );
   }
 }
@@ -61,6 +69,44 @@ class Task {
   final Importance importance;
   final bool remind;
   bool done;
+
+  Map<String, dynamic> toJson() => {
+        'id': id,
+        'name': name,
+        'due': due.millisecondsSinceEpoch,
+        'importance': importance.name,
+        'remind': remind,
+        'done': done,
+      };
+
+  factory Task.fromJson(Map<String, dynamic> json) => Task(
+        id: json['id'] as String,
+        name: json['name'] as String,
+        due: DateTime.fromMillisecondsSinceEpoch(json['due'] as int),
+        importance: Importance.values.byName(json['importance'] as String),
+        remind: json['remind'] as bool,
+        done: json['done'] as bool,
+      );
+}
+
+const _storageKey = 'due.tasks.v1';
+
+Future<List<Task>?> loadTasks() async {
+  final prefs = await SharedPreferences.getInstance();
+  final raw = prefs.getString(_storageKey);
+  if (raw == null) return null;
+  final list = jsonDecode(raw) as List<dynamic>;
+  return list
+      .map((e) => Task.fromJson(e as Map<String, dynamic>))
+      .toList();
+}
+
+Future<void> saveTasks(List<Task> tasks) async {
+  final prefs = await SharedPreferences.getInstance();
+  await prefs.setString(
+    _storageKey,
+    jsonEncode(tasks.map((t) => t.toJson()).toList()),
+  );
 }
 
 List<Task> seedTasks() {
@@ -106,16 +152,22 @@ String heroDate() {
 /* ------------------------------- 首页 ------------------------------- */
 
 class HomePage extends StatefulWidget {
-  const HomePage({super.key});
+  const HomePage({super.key, required this.initialTasks});
+
+  final List<Task> initialTasks;
 
   @override
   State<HomePage> createState() => _HomePageState();
 }
 
 class _HomePageState extends State<HomePage> {
-  final List<Task> _tasks = seedTasks();
+  late final List<Task> _tasks = List.of(widget.initialTasks);
   final TextEditingController _quickCtrl = TextEditingController();
   TaskFilter _filter = TaskFilter.all;
+
+  void _persist() {
+    saveTasks(_tasks);
+  }
 
   @override
   void dispose() {
@@ -175,12 +227,14 @@ class _HomePageState extends State<HomePage> {
       ));
       _filter = TaskFilter.all;
     });
+    _persist();
     _quickCtrl.clear();
     _snack('已添加「$name」· 默认今天 22:00 / 一般');
   }
 
   void _toggle(Task task) {
     setState(() => task.done = !task.done);
+    _persist();
   }
 
   Future<void> _openAdd() async {
@@ -192,16 +246,25 @@ class _HomePageState extends State<HomePage> {
       _tasks.add(created);
       _filter = TaskFilter.all;
     });
+    _persist();
     _snack('已添加「${created.name}」，截止 ${dayLabel(created.due)} ${hhmm(created.due)}');
   }
 
-  void _openDetail(Task task) {
-    Navigator.of(context).push(MaterialPageRoute(
+  Future<void> _openDetail(Task task) async {
+    final deleted = await Navigator.of(context).push<bool>(MaterialPageRoute(
       builder: (_) => DetailPage(
         task: task,
-        onChanged: () => setState(() {}),
+        onChanged: () {
+          setState(() {});
+          _persist();
+        },
       ),
     ));
+    if (deleted == true) {
+      setState(() => _tasks.remove(task));
+      _persist();
+      _snack('已删除「${task.name}」');
+    }
   }
 
   @override
@@ -646,6 +709,29 @@ class _DetailPageState extends State<DetailPage> {
     widget.onChanged();
   }
 
+  Future<void> _delete() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('删除待办？'),
+        content: Text('「${widget.task.name}」删除后无法恢复。'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: const Text('取消'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: const Text('删除'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed == true && mounted) {
+      Navigator.of(context).pop(true);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final task = widget.task;
@@ -764,6 +850,19 @@ class _DetailPageState extends State<DetailPage> {
             child: FilledButton(
               onPressed: _toggle,
               child: Text(task.done ? '标记为未完成' : '标记为已完成'),
+            ),
+          ),
+          const SizedBox(height: 12),
+          SizedBox(
+            height: 48,
+            child: OutlinedButton.icon(
+              onPressed: _delete,
+              icon: const Icon(Icons.delete_outline, size: 18),
+              label: const Text('删除待办'),
+              style: OutlinedButton.styleFrom(
+                foregroundColor: scheme.error,
+                side: BorderSide(color: scheme.outlineVariant),
+              ),
             ),
           ),
         ],

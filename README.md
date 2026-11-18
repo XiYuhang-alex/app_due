@@ -8,7 +8,7 @@
 
 Material 3 风格的待办清单 App · Flutter 真机实现 + 高保真 HTML 原型
 
-`Material 3` · `Flutter` · `Android APK` · `390 × 844` · `v1.2.0`
+`Material 3` · `Flutter` · `Android APK` · `390 × 844` · `v1.3.0`
 
 </div>
 
@@ -34,6 +34,10 @@ Material 3 风格的待办清单 App · Flutter 真机实现 + 高保真 HTML �
 | 🗂 **三段筛选** | 全部 / 已完成 / 未完成，切换时列表淡入替换 |
 | 📊 **完成进度** | 进度环 + 百分比随任务状态实时更新 |
 | 📝 **任务详情** | 查看截止时间、重要度、提醒、状态，一键标记完成 |
+| 🗑 **删除任务** | 详情页删除，二次确认后从列表移除 |
+| 💾 **数据持久化** | 基于 `shared_preferences` 本地存储，关闭 App 后任务与完成状态不丢失 |
+
+> 删除与持久化为 Flutter 版功能；HTML 原型用于视觉与动效演示。
 
 ---
 
@@ -66,9 +70,9 @@ Material 3 风格的待办清单 App · Flutter 真机实现 + 高保真 HTML �
 
 | 项目 | 说明 |
 |---|---|
-| 安装包 | [`Due-v1.0.0.apk`](Due-v1.0.0.apk)（约 49 MB，含 arm64 / arm / x64，Android 5.0+） |
-| 直接下载 | https://github.com/XiYuhang-alex/app_due/raw/main/Due-v1.0.0.apk |
-| 安装方式 | 手机浏览器打开上面的链接下载，或在电脑端 `adb install -r Due-v1.0.0.apk` |
+| 安装包 | [`Due-v1.3.0.apk`](Due-v1.3.0.apk)（约 50 MB，含 arm64 / arm / x64，Android 5.0+） |
+| 直接下载 | https://github.com/XiYuhang-alex/app_due/raw/main/Due-v1.3.0.apk |
+| 安装方式 | 手机浏览器打开上面的链接下载，或在电脑端 `adb install -r Due-v1.3.0.apk` |
 | 包名 | `com.xiyuhang.due_app` |
 
 > 首次安装需在系统设置中允许「安装未知来源应用」。APK 使用 debug 签名，仅供课程演示，请勿用于正式分发。
@@ -130,7 +134,7 @@ python -m http.server 8123
 ```
 app_due/
 ├── due_app/                   # Flutter 工程（lib/main.dart 单文件实现）
-├── Due-v1.0.0.apk             # Android 安装包
+├── Due-v1.3.0.apk             # Android 安装包
 ├── todo_prototype.html        # 单文件可运行原型
 ├── 全局组件样式参数说明.md     # 组件 / 动画 / Flutter 落地参数
 ├── screenshots/               # 界面截图（真机 + 原型）
@@ -148,7 +152,7 @@ app_due/
 
 <img src="assets/qr-download.png" width="180" alt="扫码下载 APK">
 
-扫描二维码，直接在手机上下载 Android 安装包（`Due-v1.0.0.apk`）。
+扫描二维码，直接在手机上下载 Android 安装包（`Due-v1.3.0.apk`）。
 
 **仓库地址：** https://github.com/XiYuhang-alex/app_due
 
@@ -157,6 +161,11 @@ app_due/
 ---
 
 ## 🗓 版本记录
+
+**v1.3.0**
+- 新增任务删除：详情页删除按钮 + 二次确认弹窗
+- 新增本地持久化（`shared_preferences`），冷启动保留任务与完成状态
+- 修复详情页「截止时间」在窄屏折行的问题
 
 **v1.2.0**
 - 新增 Flutter 版实现，可在 Android 真机安装运行
