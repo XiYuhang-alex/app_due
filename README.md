@@ -6,9 +6,9 @@
 
 **当务之急，趁早做完**
 
-Material 3 风格的待办清单 App · 高保真可交互 HTML 原型
+Material 3 风格的待办清单 App · Flutter 真机实现 + 高保真 HTML 原型
 
-`Material 3` · `Flutter Ready` · `390 × 844` · `v1.1.0`
+`Material 3` · `Flutter` · `Android APK` · `390 × 844` · `v1.2.0`
 
 </div>
 
@@ -20,7 +20,7 @@ Material 3 风格的待办清单 App · 高保真可交互 HTML 原型
 
 列表按截止时间自动排序，时间越近越靠前；同一时刻，重要度高的任务优先。完成的每一件小事都会推进进度环，配合动态日期与每日激励插画，让「趁早做完」变成一种轻量的日常。
 
-界面严格对齐 Flutter 官方默认的 Material 3 规范，颜色、文字、形状全部使用 M3 默认 Token，可直接作为 Flutter 页面实现的视觉与参数依据。
+界面严格对齐 Flutter 官方默认的 Material 3 规范，颜色、文字、形状全部使用 M3 默认 Token，并已用 Flutter 实现为可在真机安装运行的 Android App。
 
 ---
 
@@ -51,12 +51,27 @@ Material 3 风格的待办清单 App · 高保真可交互 HTML 原型
 
 <table align="center">
   <tr>
-    <td align="center" width="25%"><img src="screenshots/01-home.png" width="100%" alt="首页"><br><sub><b>首页 · 今日任务</b></sub></td>
-    <td align="center" width="25%"><img src="screenshots/03-add.png" width="100%" alt="新增待办"><br><sub><b>新增待办 · 任选日期</b></sub></td>
-    <td align="center" width="25%"><img src="screenshots/04-detail.png" width="100%" alt="待办详情"><br><sub><b>待办详情 · Hero</b></sub></td>
-    <td align="center" width="25%"><img src="screenshots/02-done.png" width="100%" alt="已完成筛选"><br><sub><b>筛选 · 已完成</b></sub></td>
+    <td align="center" width="25%"><img src="screenshots/phone-home.png" width="100%" alt="首页"><br><sub><b>首页 · 进度与排序</b></sub></td>
+    <td align="center" width="25%"><img src="screenshots/phone-add.png" width="100%" alt="新增待办"><br><sub><b>新增待办 · 任选日期</b></sub></td>
+    <td align="center" width="25%"><img src="screenshots/phone-detail.png" width="100%" alt="待办详情"><br><sub><b>待办详情 · Hero</b></sub></td>
+    <td align="center" width="25%"><img src="screenshots/phone-done.png" width="100%" alt="已完成筛选"><br><sub><b>筛选 · 已完成</b></sub></td>
   </tr>
 </table>
+
+> 以上均为 Flutter 版在 OPPO Find X8（Android 15）真机上的实拍截图。
+
+---
+
+## 📲 安装到手机
+
+| 项目 | 说明 |
+|---|---|
+| 安装包 | [`Due-v1.0.0.apk`](Due-v1.0.0.apk)（约 49 MB，含 arm64 / arm / x64，Android 5.0+） |
+| 直接下载 | https://github.com/XiYuhang-alex/app_due/raw/main/Due-v1.0.0.apk |
+| 安装方式 | 手机浏览器打开上面的链接下载，或在电脑端 `adb install -r Due-v1.0.0.apk` |
+| 包名 | `com.xiyuhang.due_app` |
+
+> 首次安装需在系统设置中允许「安装未知来源应用」。APK 使用 debug 签名，仅供课程演示，请勿用于正式分发。
 
 ---
 
@@ -78,7 +93,18 @@ Material 3 风格的待办清单 App · 高保真可交互 HTML 原型
 
 ## 🚀 快速开始
 
-无需安装依赖，直接打开：
+### Flutter 版（真机 App）
+
+```bash
+cd due_app
+flutter pub get
+flutter run              # 连接手机后直接运行
+flutter build apk --release
+```
+
+> 工程如放在含中文的路径下，Android 构建会因 AOT 快照器无法读取非 ASCII 路径而失败，建议将工程放到纯英文路径（如 `C:\dev\due_app`）再构建。
+
+### HTML 原型（无需环境）
 
 ```bash
 # 方式一：双击 todo_prototype.html
@@ -103,12 +129,14 @@ python -m http.server 8123
 
 ```
 app_due/
+├── due_app/                   # Flutter 工程（lib/main.dart 单文件实现）
+├── Due-v1.0.0.apk             # Android 安装包
 ├── todo_prototype.html        # 单文件可运行原型
 ├── 全局组件样式参数说明.md     # 组件 / 动画 / Flutter 落地参数
-├── screenshots/               # 界面截图
+├── screenshots/               # 界面截图（真机 + 原型）
 ├── assets/
 │   ├── icon.svg               # 应用图标
-│   └── qr-download.png        # 下载二维码
+│   └── qr-download.png        # APK 下载二维码
 └── README.md
 ```
 
@@ -118,9 +146,9 @@ app_due/
 
 <div align="center">
 
-<img src="assets/qr-download.png" width="180" alt="扫码打开仓库">
+<img src="assets/qr-download.png" width="180" alt="扫码下载 APK">
 
-扫描二维码，在手机上打开 GitHub 仓库，下载 `todo_prototype.html` 即可体验。
+扫描二维码，直接在手机上下载 Android 安装包（`Due-v1.0.0.apk`）。
 
 **仓库地址：** https://github.com/XiYuhang-alex/app_due
 
@@ -129,6 +157,10 @@ app_due/
 ---
 
 ## 🗓 版本记录
+
+**v1.2.0**
+- 新增 Flutter 版实现，可在 Android 真机安装运行
+- 输出 release APK，补齐真机截图与安装说明
 
 **v1.1.0**
 - 新增截止日期选择，支持任意日期 + 时间
